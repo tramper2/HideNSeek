@@ -37,7 +37,19 @@ To resolve the input conflict between camera rotation and body painting, we intr
 
 ### 3. Start Screen Redirection
 - Clicking "메인 화면으로" (Game Over/Victory screens) resets the game state back to `'START'`.
-- The user is returned to the main start menu rather than launching immediately into gameplay, allowing them to adjust brush and phase duration preferences before starting again.
+  - The user is returned to the main start menu rather than launching immediately into gameplay, allowing them to adjust brush and phase duration preferences before starting again.
+
+### 4. Player Mesh Painting Bug Fix (플레이어 바디 페인팅 버그 해결)
+- **원인**: React Three Fiber (R3F)가 컴포넌트 렌더링 시마다 `<canvasTexture args={[canvas]} />`의 인스턴스를 소멸시키고 다시 생성하여, 사용자가 색칠한 드로잉 텍스처 내용이 상태 변경(움직임 감지, 브러시 변경 등)과 동시에 초기화되어 사라지거나 렌더링에 반영되지 않는 문제가 발생했습니다.
+- **해결**: CanvasTexture를 렌더러 선언식(`<canvasTexture>`) 대신 React 훅(`useMemo`)을 통해 단 한 번만 생성 및 유지되도록 명령형 방식으로 변경하고, 이를 메쉬 재질의 `map` 속성에 직접 대입하였습니다.
+  ```tsx
+  const texture = useMemo(() => {
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, [canvas]);
+  ```
+  색칠할 때 `texture.needsUpdate = true`를 선언적으로 실행하여 컴포넌트 업데이트 시에도 유실 없이 브러시 흔적이 실시간으로 반영되도록 개선했습니다.
 
 ---
 
