@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { Environment } from './Environment';
 import { Player } from './Player';
 import { AISeeker } from './AISeeker';
+import { Coins } from './Coins';
 import { SeekerMinimap } from './SeekerMinimap';
 import { useGameStore } from '../hooks/useGameStore';
 
@@ -56,6 +57,9 @@ export const GameCanvas: React.FC = () => {
 
         {/* Environment Static Assets (Walls, Obstacles, Floor) */}
         <Environment />
+
+        {/* Collectible Coins */}
+        <Coins />
 
         {/* Player Character */}
         <Player controlsRef={controlsRef} setIsPainting={setIsPainting} />

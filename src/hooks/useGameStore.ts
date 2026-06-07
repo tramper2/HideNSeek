@@ -21,6 +21,8 @@ export interface GameState {
   bgColor: { r: number; g: number; b: number };
   colorDistance: number;
   seekerCount: number; // 1~3
+  coinsCollected: number;
+  coinsTotal: number;
 }
 
 const defaultState: GameState = {
@@ -40,6 +42,8 @@ const defaultState: GameState = {
   bgColor: { r: 210, g: 210, b: 210 }, // default light grey floor
   colorDistance: 0,
   seekerCount: 1,
+  coinsCollected: 0,
+  coinsTotal: 7,
 };
 
 let state: GameState = { ...defaultState };
@@ -80,6 +84,7 @@ export const gameStore = {
       timer: 60,
       detectionGauge: 0,
       isPlayerSpotted: false,
+      coinsCollected: 0,
     });
   },
   setGameOver() {
@@ -87,7 +92,12 @@ export const gameStore = {
   },
   setVictory() {
     this.setState({ status: 'VICTORY' });
-  }
+  },
+  collectCoin() {
+    const next = state.coinsCollected + 1;
+    state = { ...state, coinsCollected: next };
+    listeners.forEach((listener) => listener());
+  },
 };
 
 // 안정적인 getSnapshot 제공을 위한 캐시

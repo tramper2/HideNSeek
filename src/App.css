@@ -635,6 +635,33 @@ body, html, #root {
   padding-left: 4px;
 }
 
+/* Coin counter */
+.coin-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.coin-icon {
+  font-size: 18px;
+}
+
+.coin-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #FBBF24;
+  font-family: monospace;
+}
+
+.coin-complete {
+  font-size: 11px;
+  font-weight: 600;
+  color: #10B981;
+  margin-left: auto;
+}
+
 /* Exit button - top right corner */
 .btn-exit {
   position: absolute;

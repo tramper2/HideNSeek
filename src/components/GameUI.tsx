@@ -8,6 +8,8 @@ export const GameUI: React.FC = () => {
   const uiMode = useGameStore((state) => state.uiMode);
   const maxHidingTime = useGameStore((state) => state.maxHidingTime);
   const seekerCount = useGameStore((state) => state.seekerCount);
+  const coinsCollected = useGameStore((state) => state.coinsCollected);
+  const coinsTotal = useGameStore((state) => state.coinsTotal);
   const hidingTimer = useGameStore((state) => state.hidingTimer);
   const timer = useGameStore((state) => state.timer);
   const brushColor = useGameStore((state) => state.brushColor);
@@ -45,7 +47,12 @@ export const GameUI: React.FC = () => {
         } else {
           const currentTimer = state.timer;
           if (currentTimer <= 1) {
-            gameStore.setVictory();
+            // 동전을 모두 모았고 타이머 생존 → 승리, 아니면 실패
+            if (state.coinsCollected >= state.coinsTotal) {
+              gameStore.setVictory();
+            } else {
+              gameStore.setGameOver();
+            }
           } else {
             gameStore.setState({ timer: currentTimer - 1 });
           }
@@ -241,6 +248,17 @@ export const GameUI: React.FC = () => {
           <span className={`status-badge ${gamePhase === 'HIDING' ? 'hidden' : (isPlayerSpotted ? 'spotted animate-pulse' : 'hidden')}`}>
             {gamePhase === 'HIDING' ? '대기 중' : (isPlayerSpotted ? 'SPOTTED' : 'HIDDEN')}
           </span>
+        </div>
+
+        {/* Coin collection counter */}
+        <div className="coin-counter">
+          <span className="coin-icon">🪙</span>
+          <span className="coin-text">
+            {coinsCollected} / {coinsTotal}
+          </span>
+          {coinsCollected >= coinsTotal && (
+            <span className="coin-complete">✓ 전부 수집!</span>
+          )}
         </div>
 
         {/* Linear detection gauge bar */}

@@ -7,6 +7,28 @@ import { getCanvasAverageColor, hexToRgb } from '../utils/colorHelper';
 // Collision system constants
 const ROOM_LIMIT = 11.5;
 
+// ── Audio: coin collection sound
+let coinAudioCtx: AudioContext | null = null;
+
+function playCoinSound() {
+  try {
+    if (!coinAudioCtx) coinAudioCtx = new AudioContext();
+    const ctx = coinAudioCtx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 1200;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.15);
+  } catch {
+    // AudioContext may not be available
+  }
+}
+
 function checkCollision(x: number, z: number): boolean {
   // Room boundary collision
   if (Math.abs(x) > ROOM_LIMIT || Math.abs(z) > ROOM_LIMIT) return true;
@@ -258,7 +280,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
   }, [gl, camera, raycaster, setIsPainting]);
 
   // Frame tick updates: Movement and Camera Follow
-  useFrame((_, delta) => {
+  useFrame((r3fState, delta) => {
     if (!playerRef.current || statusRef.current !== 'PLAYING') return;
 
     // 1. Movement Calculations relative to Camera
@@ -313,6 +335,22 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
     if (controlsRef.current) {
       controlsRef.current.target.copy(playerRef.current.position);
       controlsRef.current.update();
+    }
+
+    // 3. Coin collection — 플레이어 위치와 미수집 동전 거리 체크
+    const coinGroup = r3fState.scene.getObjectByName('Coins');
+    if (coinGroup) {
+      const playerPos = playerRef.current.position;
+      coinGroup.children.forEach((coinMesh: THREE.Object3D) => {
+        if (!coinMesh.userData.isCoin) return;
+        const coinIdx = coinMesh.userData.coinIndex as number;
+        if (coinIdx < gameStore.getState().coinsCollected) return;
+        const dist = playerPos.distanceTo(coinMesh.position);
+        if (dist < 1.2) {
+          gameStore.collectCoin();
+          playCoinSound();
+        }
+      });
     }
   });
 
