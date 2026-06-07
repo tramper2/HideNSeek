@@ -10,6 +10,7 @@ import { useGameStore } from '../hooks/useGameStore';
 export const GameCanvas: React.FC = () => {
   const status = useGameStore((state) => state.status);
   const uiMode = useGameStore((state) => state.uiMode);
+  const seekerCount = useGameStore((state) => state.seekerCount);
   const controlsRef = useRef<any>(null);
   
   // Track if player is currently drawing to disable camera orbiting
@@ -58,8 +59,10 @@ export const GameCanvas: React.FC = () => {
         {/* Player Character */}
         <Player controlsRef={controlsRef} setIsPainting={setIsPainting} />
 
-        {/* AI Seeker Seeker */}
-        <AISeeker />
+        {/* AI Seekers — seekerCount 만큼 렌더링 */}
+        {Array.from({ length: seekerCount }, (_, i) => (
+          <AISeeker key={i} index={i} />
+        ))}
 
         {/* Camera orbital controller following the player */}
         <OrbitControls

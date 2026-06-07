@@ -20,6 +20,7 @@ export interface GameState {
   isPlayerSpotted: boolean;
   bgColor: { r: number; g: number; b: number };
   colorDistance: number;
+  seekerCount: number; // 1~3
 }
 
 const defaultState: GameState = {
@@ -30,7 +31,7 @@ const defaultState: GameState = {
   hidingTimer: 30,
   timer: 60,
   brushColor: '#991B1B', // Default to sofa red
-  brushBrightness: 1.0,
+  brushBrightness: 0.5,
   brushSize: 0.15, // Medium size (0.05 소, 0.15 중, 0.3 대)
   isPlayerMoving: false,
   playerAvgColor: { r: 255, g: 255, b: 255 },
@@ -38,6 +39,7 @@ const defaultState: GameState = {
   isPlayerSpotted: false,
   bgColor: { r: 210, g: 210, b: 210 }, // default light grey floor
   colorDistance: 0,
+  seekerCount: 1,
 };
 
 let state: GameState = { ...defaultState };

@@ -7,6 +7,7 @@ export const GameUI: React.FC = () => {
   const gamePhase = useGameStore((state) => state.gamePhase);
   const uiMode = useGameStore((state) => state.uiMode);
   const maxHidingTime = useGameStore((state) => state.maxHidingTime);
+  const seekerCount = useGameStore((state) => state.seekerCount);
   const hidingTimer = useGameStore((state) => state.hidingTimer);
   const timer = useGameStore((state) => state.timer);
   const brushColor = useGameStore((state) => state.brushColor);
@@ -131,6 +132,23 @@ export const GameUI: React.FC = () => {
                   onClick={() => gameStore.setState({ maxHidingTime: time })}
                 >
                   {time}초
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="control-section" style={{ width: '100%', margin: '5px 0' }}>
+            <h3 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+              술래 수 설정
+            </h3>
+            <div className="brush-size-group">
+              {[1, 2, 3].map((count) => (
+                <button
+                  key={count}
+                  className={`btn-brush-size ${seekerCount === count ? 'active' : ''}`}
+                  onClick={() => gameStore.setState({ seekerCount: count })}
+                >
+                  {count}명
                 </button>
               ))}
             </div>
