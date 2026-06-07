@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 
 export type GameStatus = 'START' | 'PLAYING' | 'GAMEOVER' | 'VICTORY';
 export type GamePhase = 'HIDING' | 'SEEKING';
@@ -59,7 +59,6 @@ export const gameStore = {
       }
     }
     state = { ...state, ...changes };
-    // 실제로 값이 바뀐 경우에만 리스너 통지 (불필요한 리렌더링 방지)
     if (changed) {
       listeners.forEach((listener) => listener());
     }
@@ -91,11 +90,27 @@ export const gameStore = {
   }
 };
 
+// 안정적인 getSnapshot 제공을 위한 캐시
+const cache = new WeakMap<(state: GameState) => any, { prev: GameState; result: any }>();
+
 export function useGameStore<T>(selector: (state: GameState) => T): T {
-  return useSyncExternalStore(
-    gameStore.subscribe,
-    () => selector(gameStore.getState()),
-    () => selector(defaultState)
-  );
+  const selectorRef = useRef(selector);
+  selectorRef.current = selector;
+
+  const getSnapshot = useCallback(() => {
+    const sel = selectorRef.current;
+    const s = gameStore.getState();
+    const cached = cache.get(sel);
+    if (cached && cached.prev === s) {
+      return cached.result as T;
+    }
+    const result = sel(s);
+    cache.set(sel, { prev: s, result });
+    return result;
+  }, []);
+
+  const getServerSnapshot = useCallback(() => selectorRef.current(defaultState) as T, []);
+
+  return useSyncExternalStore(gameStore.subscribe, getSnapshot, getServerSnapshot);
 }
 export type { GameState as State };

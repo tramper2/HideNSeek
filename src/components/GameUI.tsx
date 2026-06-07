@@ -213,6 +213,15 @@ export const GameUI: React.FC = () => {
         <span className="mode-label">{uiMode === 'PAINT' ? '페인팅 모드' : '시점 회전 모드'}</span>
       </div>
 
+      {/* Top Right: 나가기 버튼 */}
+      <button
+        className="btn-exit"
+        onClick={handleResetGame}
+        title="메인 화면으로"
+      >
+        ✕ 나가기
+      </button>
+
       {/* Top Left: Timer & Alert Status */}
       <div className="hud-panel top-left glass-panel">
         {gamePhase === 'HIDING' ? (
