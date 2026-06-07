@@ -51,8 +51,18 @@ export const gameStore = {
   },
   setState(nextState: Partial<GameState> | ((prev: GameState) => Partial<GameState>)) {
     const changes = typeof nextState === 'function' ? nextState(state) : nextState;
+    let changed = false;
+    for (const key in changes) {
+      if ((state as any)[key] !== (changes as any)[key]) {
+        changed = true;
+        break;
+      }
+    }
     state = { ...state, ...changes };
-    listeners.forEach((listener) => listener());
+    // 실제로 값이 바뀐 경우에만 리스너 통지 (불필요한 리렌더링 방지)
+    if (changed) {
+      listeners.forEach((listener) => listener());
+    }
   },
   subscribe(listener: () => void) {
     listeners.add(listener);

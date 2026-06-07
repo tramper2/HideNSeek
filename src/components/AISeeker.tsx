@@ -190,38 +190,40 @@ export const AISeeker: React.FC<AISeekerProps> = ({ index }) => {
     wasSpottedRef.current = spotted;
     mySpottedRef.current = spotted;
 
-    // ── Update global spotted state (OR across all seekers)
-    // First seeker resets; all seekers set true if they spot
-    if (index === 0) {
-      gameStore.setState({ isPlayerSpotted: spotted });
-    } else if (spotted) {
-      gameStore.setState({ isPlayerSpotted: true });
-    }
-
     // ── Gauge accumulation
     const bgRGB = hexToRgb(backgroundHex);
     currentDist = getDistance(bgRGB, playerAvgColor);
-    gameStore.setState({ bgColor: bgRGB, colorDistance: currentDist });
 
     const storeState = gameStore.getState();
     let gauge = storeState.detectionGauge;
 
     if (spotted) {
-      // 발견 시 무조건 게이지 상승 — 위장은 속도를 늦출 뿐 역전시키지 않음
       if (isPlayerMoving) {
-        gauge += delta * 85; // 이동 중 발견: 급격한 상승
+        gauge += delta * 85;
       } else {
-        // 정지 상태: 색상 차이에 비례해서 상승 (최소 0.3 배율 보장)
         const colorFactor = Math.max(0.3, currentDist / 441);
         gauge += delta * (10 + colorFactor * 40);
       }
     } else if (index === 0) {
-      // 쿨다운은 첫 번째 술래만 담당 — 미발견 시에만 감소
       gauge -= delta * 20;
     }
 
     gauge = Math.max(0, Math.min(100, gauge));
-    gameStore.setState({ detectionGauge: gauge });
+
+    // ── 모든 상태 업데이트를 한 번에 통합 (리렌더링 최소화)
+    const update: Record<string, any> = {
+      bgColor: bgRGB,
+      colorDistance: currentDist,
+      detectionGauge: gauge,
+    };
+
+    if (index === 0) {
+      update.isPlayerSpotted = spotted;
+    } else if (spotted) {
+      update.isPlayerSpotted = true;
+    }
+
+    gameStore.setState(update);
 
     if (gauge >= 100 && gameStore.getState().status === 'PLAYING') {
       gameStore.setGameOver();
