@@ -17,17 +17,19 @@ const COIN_POSITIONS: [number, number, number][] = [
 function Coin({ position, index }: { position: [number, number, number]; index: number }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const coinsCollected = useGameStore((s) => s.coinsCollected);
+  const isCollected = index < coinsCollected;
 
-  // 수집된 동전은 렌더링하지 않음
-  if (index < coinsCollected) return null;
-
+  // ✅ Hooks는 항상 같은 순서로 호출되어야 함 — 조건부 early return 금지
   useFrame((_, delta) => {
-    if (!meshRef.current) return;
+    if (!meshRef.current || isCollected) return;
     // Y축 회전 애니메이션
     meshRef.current.rotation.y += delta * 2;
     // 위아래 살짝 떠다니는 효과
     meshRef.current.position.y = position[1] + Math.sin(Date.now() * 0.003 + index) * 0.1;
   });
+
+  // 수집된 동전은 렌더링하지 않음 (모든 Hook 호출 이후)
+  if (isCollected) return null;
 
   return (
     <mesh ref={meshRef} position={position} userData={{ isCoin: true, coinIndex: index }}>
