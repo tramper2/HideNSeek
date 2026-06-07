@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { createPortal } from 'react-dom';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '../hooks/useGameStore';
 
@@ -148,22 +148,23 @@ export const SeekerMinimap: React.FC = () => {
 
   if (status !== 'PLAYING' || gamePhase !== 'SEEKING') return null;
 
-  return createPortal(
-    <div className="minimap-container">
-      <div className="minimap-label">🕵️ 술래 시야</div>
-      <canvas
-        ref={canvasRef}
-        width={MAP_SIZE}
-        height={MAP_SIZE}
-        className="minimap-canvas"
-      />
-      <div className="minimap-legend">
-        <span><b style={{ color: '#10B981' }}>●</b> 나</span>
-        <span><b style={{ color: '#6366F1' }}>●</b> 술래</span>
-        <span><b style={{ color: '#EF4444' }}>◐</b> 발견</span>
+  return (
+    <Html fullscreen>
+      <div className="minimap-container">
+        <div className="minimap-label">🕵️ 술래 시야</div>
+        <canvas
+          ref={canvasRef}
+          width={MAP_SIZE}
+          height={MAP_SIZE}
+          className="minimap-canvas"
+        />
+        <div className="minimap-legend">
+          <span><b style={{ color: '#10B981' }}>●</b> 나</span>
+          <span><b style={{ color: '#6366F1' }}>●</b> 술래</span>
+          <span><b style={{ color: '#EF4444' }}>◐</b> 발견</span>
+        </div>
       </div>
-    </div>,
-    document.body
+    </Html>
   );
 };
 
