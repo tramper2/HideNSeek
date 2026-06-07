@@ -68,7 +68,9 @@ interface PlayerProps {
 
 export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) => {
   const playerRef = useRef<THREE.Group>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
   const lastUpdateRef = useRef<number>(0);
+  const raycaster = useMemo(() => new THREE.Raycaster(), []);
 
   // ── React 상태 구독 (렌더링 트리거 목적)
   const status = useGameStore((state) => state.status);
@@ -91,7 +93,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
   useEffect(() => { brushBrightnessRef.current = brushBrightness; }, [brushBrightness]);
   useEffect(() => { brushSizeRef.current = brushSize; }, [brushSize]);
 
-  const { camera } = useThree();
+  const { camera, gl } = useThree();
   const isPaintingRef = useRef(false);
 
   // Key state listener
@@ -195,49 +197,65 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
     updateAverageColor();
   };
 
-  // ── R3F pointer handlers (ref를 읽으므로 stale closure 없음)
-  const handlePointerDown = (e: any) => {
-    e.stopPropagation();
-    if (statusRef.current !== 'PLAYING' || uiModeRef.current !== 'PAINT') return;
-
-    isPaintingRef.current = true;
-    setIsPainting(true);
-
-    // 클릭 지점에 첫 도트 그리기
-    if (e.uv) {
-      paintDot(e.uv.x, e.uv.y);
-    }
-  };
-
-  const handlePointerMove = (e: any) => {
-    e.stopPropagation();
-    if (!isPaintingRef.current || !e.uv || uiModeRef.current !== 'PAINT') return;
-    paintDot(e.uv.x, e.uv.y);
-  };
-
-  const handlePointerUp = (e: any) => {
-    e.stopPropagation();
-    if (isPaintingRef.current) {
-      isPaintingRef.current = false;
-      setIsPainting(false);
-      updateAverageColor(true);
-    }
-  };
-
-  // Global mouseup fallback (마우스가 mesh 밖에서 떼어질 때 대비)
+  // ── 수동 Raycaster 기반 페인팅 (R3F 포인터 이벤트 대신 DOM 이벤트 사용)
   useEffect(() => {
-    const handleGlobalMouseUp = () => {
+    const domElement = gl.domElement;
+
+    const getNDC = (e: PointerEvent) => {
+      const rect = domElement.getBoundingClientRect();
+      return new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+    };
+
+    const tryPaint = (e: PointerEvent) => {
+      if (!meshRef.current) return false;
+      const ndc = getNDC(e);
+      raycaster.setFromCamera(ndc, camera);
+      const hits = raycaster.intersectObject(meshRef.current);
+      if (hits.length > 0 && hits[0].uv) {
+        paintDot(hits[0].uv.x, hits[0].uv.y);
+        return true;
+      }
+      return false;
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (statusRef.current !== 'PLAYING' || uiModeRef.current !== 'PAINT') return;
+      const painted = tryPaint(e);
+      if (painted) {
+        isPaintingRef.current = true;
+        setIsPainting(true);
+      }
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isPaintingRef.current || uiModeRef.current !== 'PAINT') return;
+      tryPaint(e);
+    };
+
+    const onPointerUp = () => {
       if (isPaintingRef.current) {
         isPaintingRef.current = false;
         setIsPainting(false);
         updateAverageColor(true);
       }
     };
-    window.addEventListener('mouseup', handleGlobalMouseUp);
+
+    domElement.addEventListener('pointerdown', onPointerDown);
+    domElement.addEventListener('pointermove', onPointerMove);
+    domElement.addEventListener('pointerup', onPointerUp);
+    // 마우스가 캔버스 밖에서 떼어질 때 대비
+    window.addEventListener('pointerup', onPointerUp);
+
     return () => {
-      window.removeEventListener('mouseup', handleGlobalMouseUp);
+      domElement.removeEventListener('pointerdown', onPointerDown);
+      domElement.removeEventListener('pointermove', onPointerMove);
+      domElement.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointerup', onPointerUp);
     };
-  }, [setIsPainting]);
+  }, [gl, camera, raycaster, setIsPainting]);
 
   // Frame tick updates: Movement and Camera Follow
   useFrame((_, delta) => {
@@ -302,11 +320,9 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
     <group ref={playerRef} position={[0, 0.9, 4]} name="Player">
       {/* Player character visual geometry: Capsule mesh */}
       <mesh
+        ref={meshRef}
         castShadow
         receiveShadow
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
         userData={{ isPlayer: true }}
       >
         <capsuleGeometry args={[0.4, 1.0, 8, 16]} />

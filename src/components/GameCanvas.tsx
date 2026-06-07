@@ -16,7 +16,9 @@ export const GameCanvas: React.FC = () => {
   const [isPainting, setIsPainting] = useState(false);
 
   return (
-    <div className="canvas-container">
+    <div
+      className={`canvas-container ${status === 'PLAYING' ? (uiMode === 'PAINT' ? 'cursor-paint' : 'cursor-orbit') : ''}`}
+    >
       <Canvas
         shadows
         camera={{ position: [0, 6, 8], fov: 60 }}

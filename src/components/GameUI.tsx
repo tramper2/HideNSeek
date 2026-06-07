@@ -189,6 +189,12 @@ export const GameUI: React.FC = () => {
 
   return (
     <div className="game-hud-layer">
+      {/* Top Center: Mode Indicator Banner */}
+      <div className={`mode-banner ${uiMode === 'PAINT' ? 'mode-paint' : 'mode-orbit'}`}>
+        <span className="mode-icon">{uiMode === 'PAINT' ? '🖌️' : '🎥'}</span>
+        <span className="mode-label">{uiMode === 'PAINT' ? '페인팅 모드' : '시점 회전 모드'}</span>
+      </div>
+
       {/* Top Left: Timer & Alert Status */}
       <div className="hud-panel top-left glass-panel">
         {gamePhase === 'HIDING' ? (
@@ -236,99 +242,119 @@ export const GameUI: React.FC = () => {
         )}
       </div>
 
-      {/* Right side: Paint Control Panel */}
-      <div className="hud-panel right-controls glass-panel">
-        <h2>위장 팔레트</h2>
-        
-        {/* Controls Mode Toggle */}
-        <div className="control-section">
-          <h3>조작 모드 선택</h3>
+      {/* Right side: Paint Control Panel (페인팅 모드에서만 표시) */}
+      {uiMode === 'PAINT' && (
+        <div className="hud-panel right-controls glass-panel">
+          <h2>위장 팔레트</h2>
+
+          {/* Controls Mode Toggle */}
+          <div className="control-section">
+            <h3>조작 모드 선택</h3>
+            <div className="brush-size-group">
+              <button
+                className="btn-brush-size active"
+                style={{ flex: '1.2' }}
+              >
+                🖌️ 페인팅 모드
+              </button>
+              <button
+                className="btn-brush-size"
+                style={{ flex: '1.2' }}
+                onClick={() => gameStore.setState({ uiMode: 'ORBIT' })}
+              >
+                🎥 시점 회전 모드
+              </button>
+            </div>
+          </div>
+
+          <p className="panel-desc" style={{ marginTop: '-12px', fontSize: '11px', lineHeight: '1.3' }}>
+            페인팅 모드: 캐릭터 몸(캡슐)을 클릭 드래그하여 페인팅할 수 있습니다.
+          </p>
+
+          {/* Color Palette */}
+          <div className="control-section">
+            <h3>브러시 색상</h3>
+            <div className="color-palette-grid">
+              {palette.map((color, idx) => (
+                <button
+                  key={idx}
+                  className={`color-chip-btn ${brushColor === color.hex ? 'active' : ''}`}
+                  style={{ backgroundColor: color.hex }}
+                  title={color.name}
+                  onClick={() => gameStore.setState({ brushColor: color.hex })}
+                >
+                  {brushColor === color.hex && (
+                    <span className="check-icon" style={{ color: color.hex === '#FFFFFF' || color.hex === '#FEF3C7' || color.hex === '#D1FAE5' ? '#1E2937' : '#FFFFFF' }}>✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Lightness range slider */}
+          <div className="control-section">
+            <div className="slider-header">
+              <h3>명도 조절</h3>
+              <span>{Math.round(brushBrightness * 100)}%</span>
+            </div>
+            <input
+              type="range"
+              min="0.0"
+              max="1.0"
+              step="0.05"
+              className="brightness-slider"
+              value={brushBrightness}
+              onChange={(e) => gameStore.setState({ brushBrightness: parseFloat(e.target.value) })}
+            />
+          </div>
+
+          {/* Brush Size options */}
+          <div className="control-section">
+            <h3>브러시 크기</h3>
+            <div className="brush-size-group">
+              {[
+                { label: '소 (5px)', size: 0.05 },
+                { label: '중 (15px)', size: 0.15 },
+                { label: '대 (30px)', size: 0.3 }
+              ].map((brush, idx) => (
+                <button
+                  key={idx}
+                  className={`btn-brush-size ${brushSize === brush.size ? 'active' : ''}`}
+                  onClick={() => gameStore.setState({ brushSize: brush.size })}
+                >
+                  {brush.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tips box */}
+          <div className="tips-box">
+            <p>💡 <strong>Tip</strong>: 은폐 단계인 첫 30초 동안 벽이나 장애물 옆에 위치를 잡고, 바디 텍스처를 배경색과 동일하게 색칠하세요! 30초가 지나면 술래가 이동을 시작합니다.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ORBIT 모드에서는 모드 전환 버튼만 최소 표시 */}
+      {uiMode === 'ORBIT' && (
+        <div className="hud-panel right-controls glass-panel" style={{ width: 'auto', padding: '16px' }}>
           <div className="brush-size-group">
             <button
-              className={`btn-brush-size ${uiMode === 'PAINT' ? 'active' : ''}`}
+              className={`btn-brush-size`}
               style={{ flex: '1.2' }}
               onClick={() => gameStore.setState({ uiMode: 'PAINT' })}
             >
-              🖌️ 페인팅 모드
+              🖌️ 페인팅
             </button>
             <button
-              className={`btn-brush-size ${uiMode === 'ORBIT' ? 'active' : ''}`}
+              className={`btn-brush-size active`}
               style={{ flex: '1.2' }}
-              onClick={() => gameStore.setState({ uiMode: 'ORBIT' })}
             >
-              🎥 시점 회전 모드
+              🎥 시점 회전
             </button>
           </div>
         </div>
-
-        <p className="panel-desc" style={{ marginTop: '-12px', fontSize: '11px', lineHeight: '1.3' }}>
-          {uiMode === 'PAINT' 
-            ? '페인팅 모드 활성화: 카메라 회전이 락인(lock)되고 캐릭터 몸(캡슐)을 직접 클릭 드래그하여 페인팅할 수 있습니다.' 
-            : '시점 회전 모드 활성화: 화면 빈 공간을 클릭 드래그하여 플레이어 주변의 카메라 시점을 회전할 수 있습니다.'}
-        </p>
-        
-        {/* Color Palette */}
-        <div className="control-section">
-          <h3>브러시 색상</h3>
-          <div className="color-palette-grid">
-            {palette.map((color, idx) => (
-              <button
-                key={idx}
-                className={`color-chip-btn ${brushColor === color.hex ? 'active' : ''}`}
-                style={{ backgroundColor: color.hex }}
-                title={color.name}
-                onClick={() => gameStore.setState({ brushColor: color.hex })}
-              >
-                {brushColor === color.hex && (
-                  <span className="check-icon" style={{ color: color.hex === '#FFFFFF' || color.hex === '#FEF3C7' || color.hex === '#D1FAE5' ? '#1E2937' : '#FFFFFF' }}>✓</span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Lightness range slider */}
-        <div className="control-section">
-          <div className="slider-header">
-            <h3>명도 조절</h3>
-            <span>{Math.round(brushBrightness * 100)}%</span>
-          </div>
-          <input
-            type="range"
-            min="0.0"
-            max="1.0"
-            step="0.05"
-            className="brightness-slider"
-            value={brushBrightness}
-            onChange={(e) => gameStore.setState({ brushBrightness: parseFloat(e.target.value) })}
-          />
-        </div>
-
-        {/* Brush Size options */}
-        <div className="control-section">
-          <h3>브러시 크기</h3>
-          <div className="brush-size-group">
-            {[
-              { label: '소 (5px)', size: 0.05 },
-              { label: '중 (15px)', size: 0.15 },
-              { label: '대 (30px)', size: 0.3 }
-            ].map((brush, idx) => (
-              <button
-                key={idx}
-                className={`btn-brush-size ${brushSize === brush.size ? 'active' : ''}`}
-                onClick={() => gameStore.setState({ brushSize: brush.size })}
-              >
-                {brush.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* Tips box */}
-        <div className="tips-box">
-          <p>💡 <strong>Tip</strong>: 은폐 단계인 첫 30초 동안 벽이나 장애물 옆에 위치를 잡고, 바디 텍스처를 배경색과 동일하게 색칠하세요! 30초가 지나면 술래가 이동을 시작합니다.</p>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
