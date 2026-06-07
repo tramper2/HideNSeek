@@ -186,6 +186,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
       gameStore.setState({ playerAvgColor: { r: 255, g: 255, b: 255 } });
       if (playerRef.current) {
         playerRef.current.position.set(0, 0.9, 4);
+        playerRef.current.rotation.set(0, Math.PI, 0); // Face towards center of the room
       }
     }
   }, [status, canvas, texture]);
@@ -283,29 +284,35 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
   useFrame((r3fState, delta) => {
     if (!playerRef.current || statusRef.current !== 'PLAYING') return;
 
-    // 1. Movement Calculations relative to Camera
-    const moveX = (keys.current.d ? 1 : 0) - (keys.current.a ? 1 : 0);
-    const moveZ = (keys.current.s ? 1 : 0) - (keys.current.w ? 1 : 0);
+    // 1. Rotation Calculations (A/D keys rotate player)
+    const rotationSpeed = 3.0; // rad/s
+    if (keys.current.a) {
+      playerRef.current.rotation.y += rotationSpeed * delta;
+    }
+    if (keys.current.d) {
+      playerRef.current.rotation.y -= rotationSpeed * delta;
+    }
 
-    const isMoving = moveX !== 0 || moveZ !== 0;
+    // 2. Movement Calculations (W/S keys move player relative to local forward direction)
+    const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(playerRef.current.quaternion);
+    forward.y = 0; // Lock movement to XZ plane
+    forward.normalize();
+
+    const moveDirection = new THREE.Vector3();
+    if (keys.current.w) {
+      moveDirection.add(forward);
+    }
+    if (keys.current.s) {
+      moveDirection.sub(forward);
+    }
+
+    const isMoving = moveDirection.lengthSq() > 0;
     if (isMoving !== isPlayerMoving) {
       gameStore.setState({ isPlayerMoving: isMoving });
     }
 
     if (isMoving) {
-      const camForward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-      camForward.y = 0;
-      camForward.normalize();
-
-      const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-      camRight.y = 0;
-      camRight.normalize();
-
-      const moveDirection = new THREE.Vector3()
-        .addScaledVector(camRight, moveX)
-        .addScaledVector(camForward, moveZ)
-        .normalize();
-
+      moveDirection.normalize();
       const speed = 4.5;
       const step = speed * delta;
 
@@ -322,13 +329,6 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
       }
 
       playerRef.current.position.copy(newPos);
-
-      const targetRotation = Math.atan2(moveDirection.x, moveDirection.z);
-      playerRef.current.rotation.y = THREE.MathUtils.lerp(
-        playerRef.current.rotation.y,
-        targetRotation,
-        15 * delta
-      );
     }
 
     // 2. Camera Tracking lock
