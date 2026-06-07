@@ -68,7 +68,6 @@ interface PlayerProps {
 
 export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) => {
   const playerRef = useRef<THREE.Group>(null);
-  const textureRef = useRef<THREE.CanvasTexture>(null);
   const lastUpdateRef = useRef<number>(0);
   
   const status = useGameStore((state) => state.status);
@@ -130,6 +129,13 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
     gameStore.setState({ playerAvgColor: avg });
   }, [canvas]);
 
+  // Memoize CanvasTexture to prevent recreating it on every component render
+  const texture = useMemo(() => {
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, [canvas]);
+
   // Force texture recalculation on game reset/status change
   useEffect(() => {
     if (status === 'PLAYING') {
@@ -138,8 +144,8 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, 512, 512);
       }
-      if (textureRef.current) {
-        textureRef.current.needsUpdate = true;
+      if (texture) {
+        texture.needsUpdate = true;
       }
       gameStore.setState({ playerAvgColor: { r: 255, g: 255, b: 255 } });
       if (playerRef.current) {
@@ -180,8 +186,8 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
 
-    if (textureRef.current) {
-      textureRef.current.needsUpdate = true;
+    if (texture) {
+      texture.needsUpdate = true;
     }
 
     updateAverageColor();
@@ -284,14 +290,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
         userData={{ isPlayer: true }}
       >
         <capsuleGeometry args={[0.4, 1.0, 8, 16]} />
-        <meshStandardMaterial roughness={0.6}>
-          <canvasTexture 
-            ref={textureRef} 
-            attach="map" 
-            image={canvas} 
-            colorSpace={THREE.SRGBColorSpace} 
-          />
-        </meshStandardMaterial>
+        <meshStandardMaterial map={texture} roughness={0.6} />
       </mesh>
 
       {/* Decorative Visor/Eyes to show front direction */}
