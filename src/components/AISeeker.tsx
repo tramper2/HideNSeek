@@ -93,8 +93,10 @@ export const AISeeker: React.FC<AISeekerProps> = ({ index }) => {
   }, [status, index]);
 
   useFrame((state, delta) => {
-    if (status !== 'PLAYING' || !seekerRef.current) {
-      if (status === 'START' && seekerRef.current) {
+    // store에서 직접 읽어서 stale React state 문제 방지
+    const currentStatus = gameStore.getState().status;
+    if (currentStatus !== 'PLAYING' || !seekerRef.current) {
+      if (currentStatus === 'START' && seekerRef.current) {
         seekerRef.current.position.set(...startPos);
         seekerRef.current.rotation.set(0, 0, 0);
       }
@@ -221,8 +223,9 @@ export const AISeeker: React.FC<AISeekerProps> = ({ index }) => {
     gauge = Math.max(0, Math.min(100, gauge));
     gameStore.setState({ detectionGauge: gauge });
 
-    if (gauge >= 100) {
+    if (gauge >= 100 && gameStore.getState().status === 'PLAYING') {
       gameStore.setGameOver();
+      return;
     }
 
     // ── Movement: STOP when this seeker spotted the player
