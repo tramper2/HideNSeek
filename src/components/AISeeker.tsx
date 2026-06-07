@@ -278,9 +278,11 @@ export const AISeeker: React.FC<AISeekerProps> = ({ index }) => {
     }
   });
 
+  const detectionGauge = useGameStore((s) => s.detectionGauge);
+
   // Color for vision cone
   const coneColor = isPlayerSpotted
-    ? (useGameStore((s) => s.detectionGauge) > 50 ? '#EF4444' : '#F59E0B')
+    ? (detectionGauge > 50 ? '#EF4444' : '#F59E0B')
     : '#10B981';
 
   return (
