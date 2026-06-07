@@ -124,6 +124,7 @@ export const GameUI: React.FC = () => {
               <li>🎥 <strong>시점 회전</strong>: 조작 모드를 <strong>시점 회전 모드</strong>로 바꾼 후 화면 드래그</li>
               <li>⏱️ <strong>은폐 시간 ({maxHidingTime}초)</strong>: 게임 시작 시 {maxHidingTime}초 동안 술래가 대기하며, 플레이어는 자유롭게 이동하고 위장색을 칠할 수 있습니다.</li>
               <li>🕵️ <strong>은폐 규칙</strong>: 술래의 감시 시야 원뿔 안에 있을 때 <strong>움직이거나</strong> 색상이 다르면 발각 게이지가 상승합니다!</li>
+              <li>🪙 <strong>동전 수집 미션</strong>: 방 안에 숨겨진 <strong>7개의 동전</strong>을 모두 수집하고 타이머가 끝날 때까지 생존해야 승리합니다! 동전 근처로 이동하면 자동 수집됩니다.</li>
             </ul>
           </div>
 
