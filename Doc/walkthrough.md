@@ -22,11 +22,11 @@ We created and refined a fully playable, web-based 3D hide-and-seek game utilizi
 
 ## 🎮 Core Game Mechanics Refined
 
-### 1. 30-Second Hiding Phase (은폐 단계)
-- When the game starts, players are granted **30 seconds** of Hiding Phase.
+### 1. Configurable Hiding Phase (사용자 설정형 은폐 단계)
+- When the game starts, players are granted a preparational Hiding Phase of **30, 60, or 120 seconds**, configurable directly on the Start Screen.
 - A countdown timer labeled `"은폐 가능 시간"` is displayed in the HUD.
 - During this phase, the AI Seeker remains stationary at the center `[0, 1.0, 0]` and its detection algorithm is disabled (alert gauge remains locked at 0%).
-- After 30 seconds, the game automatically transitions to the **Seeking Phase** (생존 시간), where the AI Seeker starts patrolling and the 60-second countdown begins.
+- After the hiding time runs out, the game transitions to the **Seeking Phase** (생존 시간), where the AI Seeker starts patrolling and the 60-second countdown begins.
 
 ### 2. Gesture Mode Toggle (조작 모드 분리)
 To resolve the input conflict between camera rotation and body painting, we introduced a **UIMode Toggle** in the HUD panel:

@@ -6,6 +6,7 @@ export const GameUI: React.FC = () => {
   const status = useGameStore((state) => state.status);
   const gamePhase = useGameStore((state) => state.gamePhase);
   const uiMode = useGameStore((state) => state.uiMode);
+  const maxHidingTime = useGameStore((state) => state.maxHidingTime);
   const hidingTimer = useGameStore((state) => state.hidingTimer);
   const timer = useGameStore((state) => state.timer);
   const brushColor = useGameStore((state) => state.brushColor);
@@ -113,9 +114,26 @@ export const GameUI: React.FC = () => {
               <li>⌨️ <strong>이동</strong>: <code>WASD</code> 또는 <code>방향키</code></li>
               <li>🖌️ <strong>페인팅</strong>: 플레이어 몸통(캡슐)을 클릭 및 드래그 (조작 모드가 <strong>페인팅 모드</strong>일 때 가능)</li>
               <li>🎥 <strong>시점 회전</strong>: 조작 모드를 <strong>시점 회전 모드</strong>로 바꾼 후 화면 드래그</li>
-              <li>⏱️ <strong>은폐 시간 (30초)</strong>: 게임 시작 시 30초 동안 술래가 대기하며, 플레이어는 자유롭게 이동하고 위장색을 칠할 수 있습니다.</li>
+              <li>⏱️ <strong>은폐 시간 ({maxHidingTime}초)</strong>: 게임 시작 시 {maxHidingTime}초 동안 술래가 대기하며, 플레이어는 자유롭게 이동하고 위장색을 칠할 수 있습니다.</li>
               <li>🕵️ <strong>은폐 규칙</strong>: 술래의 감시 시야 원뿔 안에 있을 때 <strong>움직이거나</strong> 색상이 다르면 발각 게이지가 상승합니다!</li>
             </ul>
+          </div>
+
+          <div className="control-section" style={{ width: '100%', margin: '5px 0' }}>
+            <h3 style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+              은폐 시간 설정
+            </h3>
+            <div className="brush-size-group">
+              {[30, 60, 120].map((time) => (
+                <button
+                  key={time}
+                  className={`btn-brush-size ${maxHidingTime === time ? 'active' : ''}`}
+                  onClick={() => gameStore.setState({ maxHidingTime: time })}
+                >
+                  {time}초
+                </button>
+              ))}
+            </div>
           </div>
           
           <button className="btn btn-primary" onClick={handleStartGame}>

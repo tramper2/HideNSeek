@@ -8,6 +8,7 @@ export interface GameState {
   status: GameStatus;
   gamePhase: GamePhase;
   uiMode: UIMode;
+  maxHidingTime: number; // User configurable hiding time
   hidingTimer: number;
   timer: number;
   brushColor: string;
@@ -25,6 +26,7 @@ const defaultState: GameState = {
   status: 'START',
   gamePhase: 'HIDING',
   uiMode: 'PAINT',
+  maxHidingTime: 30,
   hidingTimer: 30,
   timer: 60,
   brushColor: '#991B1B', // Default to sofa red
@@ -63,7 +65,7 @@ export const gameStore = {
       status: 'PLAYING',
       gamePhase: 'HIDING',
       uiMode: 'PAINT',
-      hidingTimer: 30,
+      hidingTimer: state.maxHidingTime,
       timer: 60,
       detectionGauge: 0,
       isPlayerSpotted: false,
