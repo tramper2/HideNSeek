@@ -198,6 +198,41 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
     if (status !== 'PLAYING' || uiMode !== 'PAINT') return;
     isPaintingRef.current = true;
     setIsPainting(true); // Disable OrbitControls
+
+    // Capture pointer so move/up events keep firing on this mesh
+    if (e.nativeEvent?.target?.setPointerCapture && e.nativeEvent?.pointerId != null) {
+      e.nativeEvent.target.setPointerCapture(e.nativeEvent.pointerId);
+    }
+
+    // Draw the first dot at the click point
+    if (e.uv) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        const u = e.uv.x;
+        const v = e.uv.y;
+        const x = u * canvas.width;
+        const y = (1 - v) * canvas.height;
+        const radius = brushSize * 120;
+        const hsl = hexToHsl(brushColor);
+        ctx.fillStyle = `hsl(${hsl.h}, ${hsl.s}%, ${brushBrightness * 100}%)`;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+        if (texture) {
+          texture.needsUpdate = true;
+        }
+        updateAverageColor();
+      }
+    }
+  };
+
+  const handlePointerUp = (e: any) => {
+    e.stopPropagation();
+    if (isPaintingRef.current) {
+      isPaintingRef.current = false;
+      setIsPainting(false);
+      updateAverageColor(true);
+    }
   };
 
   // Global mouse up event listener to cancel paint drag safely
@@ -287,6 +322,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
         receiveShadow
         onPointerDown={handlePointerDown}
         onPointerMove={drawOnTexture}
+        onPointerUp={handlePointerUp}
         userData={{ isPlayer: true }}
       >
         <capsuleGeometry args={[0.4, 1.0, 8, 16]} />

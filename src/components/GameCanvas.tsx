@@ -63,6 +63,9 @@ export const GameCanvas: React.FC = () => {
         <OrbitControls
           ref={controlsRef}
           enabled={!isPainting && uiMode === 'ORBIT' && status === 'PLAYING'}
+          enableRotate={uiMode === 'ORBIT' && !isPainting}
+          enablePan={false}
+          enableZoom={uiMode === 'ORBIT' && !isPainting}
           enableDamping
           dampingFactor={0.08}
           minDistance={4}
