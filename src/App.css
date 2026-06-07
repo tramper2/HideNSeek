@@ -600,6 +600,41 @@ body, html, #root {
   cursor: grabbing;
 }
 
+/* Seeker Minimap */
+.minimap-container {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 15;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.minimap-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-left: 4px;
+}
+
+.minimap-canvas {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  display: block;
+}
+
+.minimap-legend {
+  display: flex;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  padding-left: 4px;
+}
+
 /* Exit button - top right corner */
 .btn-exit {
   position: absolute;

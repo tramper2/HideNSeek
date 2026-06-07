@@ -26,6 +26,7 @@ const PATROL_OFFSETS: number[] = [0, 2, 4]; // Starting node index offset
 const SEEKER_SPEED = 2.8;
 const VISION_RANGE = 9.5;
 const FOV_ANGLE = Math.PI / 3; // 60 degrees total FOV
+const COLOR_THRESHOLD = 110; // 색상 거리가 이 값 이하면 위장 성공으로 판정
 
 // ── Audio: spotted alert sound using Web Audio API
 let audioCtx: AudioContext | null = null;
@@ -199,12 +200,18 @@ export const AISeeker: React.FC<AISeekerProps> = ({ index }) => {
 
     if (spotted) {
       if (isPlayerMoving) {
+        // 이동 중 = 위장 무효, 항상 급격히 상승
         gauge += delta * 85;
+      } else if (currentDist > COLOR_THRESHOLD) {
+        // 정지 + 위장 실패 = 색상 차이에 비례하여 상승
+        const scale = (currentDist - COLOR_THRESHOLD) / (441 - COLOR_THRESHOLD);
+        gauge += delta * (15 + scale * 35);
       } else {
-        const colorFactor = Math.max(0.3, currentDist / 441);
-        gauge += delta * (10 + colorFactor * 40);
+        // 정지 + 위장 성공 = 술래가 구별 못함! 게이지 감소
+        gauge -= delta * 15;
       }
     } else if (index === 0) {
+      // 시야 밖 = 쿨다운 (첫 번째 술래만)
       gauge -= delta * 20;
     }
 

@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { Environment } from './Environment';
 import { Player } from './Player';
 import { AISeeker } from './AISeeker';
+import { SeekerMinimap } from './SeekerMinimap';
 import { useGameStore } from '../hooks/useGameStore';
 
 export const GameCanvas: React.FC = () => {
@@ -78,6 +79,9 @@ export const GameCanvas: React.FC = () => {
           maxPolarAngle={Math.PI / 2.1} // Prevent camera from slipping under the floor
           target={[0, 0.9, 0]}
         />
+
+        {/* 술래 시야 미니맵 (SEEKING 페이즈에만 표시) */}
+        <SeekerMinimap />
       </Canvas>
     </div>
   );
