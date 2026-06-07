@@ -72,6 +72,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
   const lastUpdateRef = useRef<number>(0);
   
   const status = useGameStore((state) => state.status);
+  const uiMode = useGameStore((state) => state.uiMode);
   const brushColor = useGameStore((state) => state.brushColor);
   const brushBrightness = useGameStore((state) => state.brushBrightness);
   const brushSize = useGameStore((state) => state.brushSize);
@@ -160,7 +161,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
   // Paint texture on drag
   const drawOnTexture = (e: any) => {
     e.stopPropagation();
-    if (!paintingInProgress || !e.uv) return;
+    if (!paintingInProgress || !e.uv || uiMode !== 'PAINT') return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -188,7 +189,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
 
   const handlePointerDown = (e: any) => {
     e.stopPropagation();
-    if (status !== 'PLAYING') return;
+    if (status !== 'PLAYING' || uiMode !== 'PAINT') return;
     setPaintingInProgress(true);
     setIsPainting(true); // Disable OrbitControls
   };

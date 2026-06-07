@@ -1,9 +1,14 @@
 import { useSyncExternalStore } from 'react';
 
 export type GameStatus = 'START' | 'PLAYING' | 'GAMEOVER' | 'VICTORY';
+export type GamePhase = 'HIDING' | 'SEEKING';
+export type UIMode = 'PAINT' | 'ORBIT';
 
 export interface GameState {
   status: GameStatus;
+  gamePhase: GamePhase;
+  uiMode: UIMode;
+  hidingTimer: number;
   timer: number;
   brushColor: string;
   brushBrightness: number;
@@ -18,6 +23,9 @@ export interface GameState {
 
 const defaultState: GameState = {
   status: 'START',
+  gamePhase: 'HIDING',
+  uiMode: 'PAINT',
+  hidingTimer: 30,
   timer: 60,
   brushColor: '#991B1B', // Default to sofa red
   brushBrightness: 1.0,
@@ -51,7 +59,15 @@ export const gameStore = {
     listeners.forEach((listener) => listener());
   },
   startGame() {
-    this.setState({ status: 'PLAYING', timer: 60, detectionGauge: 0, isPlayerSpotted: false });
+    this.setState({
+      status: 'PLAYING',
+      gamePhase: 'HIDING',
+      uiMode: 'PAINT',
+      hidingTimer: 30,
+      timer: 60,
+      detectionGauge: 0,
+      isPlayerSpotted: false,
+    });
   },
   setGameOver() {
     this.setState({ status: 'GAMEOVER' });

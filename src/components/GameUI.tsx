@@ -4,6 +4,9 @@ import { gameStore, useGameStore } from '../hooks/useGameStore';
 
 export const GameUI: React.FC = () => {
   const status = useGameStore((state) => state.status);
+  const gamePhase = useGameStore((state) => state.gamePhase);
+  const uiMode = useGameStore((state) => state.uiMode);
+  const hidingTimer = useGameStore((state) => state.hidingTimer);
   const timer = useGameStore((state) => state.timer);
   const brushColor = useGameStore((state) => state.brushColor);
   const brushBrightness = useGameStore((state) => state.brushBrightness);
@@ -23,17 +26,27 @@ export const GameUI: React.FC = () => {
     { name: 'White (기본)', hex: '#FFFFFF' }
   ];
 
-  // Timer Countdown Logic
+  // Timer Countdown Logic: handles Hiding and Seeking phases
   useEffect(() => {
     let interval: any = null;
     
     if (status === 'PLAYING') {
       interval = setInterval(() => {
-        const currentTimer = gameStore.getState().timer;
-        if (currentTimer <= 1) {
-          gameStore.setVictory();
+        const state = gameStore.getState();
+        if (state.gamePhase === 'HIDING') {
+          const currentHiding = state.hidingTimer;
+          if (currentHiding <= 1) {
+            gameStore.setState({ gamePhase: 'SEEKING', hidingTimer: 0 });
+          } else {
+            gameStore.setState({ hidingTimer: currentHiding - 1 });
+          }
         } else {
-          gameStore.setState({ timer: currentTimer - 1 });
+          const currentTimer = state.timer;
+          if (currentTimer <= 1) {
+            gameStore.setVictory();
+          } else {
+            gameStore.setState({ timer: currentTimer - 1 });
+          }
         }
       }, 1000);
     }
@@ -83,8 +96,7 @@ export const GameUI: React.FC = () => {
   };
 
   const handleResetGame = () => {
-    gameStore.reset();
-    gameStore.startGame();
+    gameStore.reset(); // Returns status back to 'START' to show the main screen
   };
 
   // 1. Start Overlay Screen
@@ -99,10 +111,10 @@ export const GameUI: React.FC = () => {
             <h3>게임 방법</h3>
             <ul>
               <li>⌨️ <strong>이동</strong>: <code>WASD</code> 또는 <code>방향키</code></li>
-              <li>🖱️ <strong>시점 회전</strong>: 배경을 마우스 클릭 후 드래그</li>
-              <li>🖌️ <strong>페인팅</strong>: 플레이어 몸통(캡슐)을 클릭 및 드래그</li>
-              <li>🕵️ <strong>은폐</strong>: 뒤에 있는 벽이나 가구의 색상과 몸색을 일치시키고 멈추세요!</li>
-              <li>⚠️ <strong>주의</strong>: 술래의 감시 시야 cone 안에 있을 때 <strong>움직이거나</strong> 색상이 다르면 발각 게이지가 차오릅니다!</li>
+              <li>🖌️ <strong>페인팅</strong>: 플레이어 몸통(캡슐)을 클릭 및 드래그 (조작 모드가 <strong>페인팅 모드</strong>일 때 가능)</li>
+              <li>🎥 <strong>시점 회전</strong>: 조작 모드를 <strong>시점 회전 모드</strong>로 바꾼 후 화면 드래그</li>
+              <li>⏱️ <strong>은폐 시간 (30초)</strong>: 게임 시작 시 30초 동안 술래가 대기하며, 플레이어는 자유롭게 이동하고 위장색을 칠할 수 있습니다.</li>
+              <li>🕵️ <strong>은폐 규칙</strong>: 술래의 감시 시야 원뿔 안에 있을 때 <strong>움직이거나</strong> 색상이 다르면 발각 게이지가 상승합니다!</li>
             </ul>
           </div>
           
@@ -125,7 +137,7 @@ export const GameUI: React.FC = () => {
             <p>버틴 시간: <strong>{formatTime(60 - timer)}</strong></p>
           </div>
           <button className="btn btn-danger" onClick={handleResetGame}>
-            다시 도전
+            메인 화면으로
           </button>
         </div>
       </div>
@@ -138,12 +150,12 @@ export const GameUI: React.FC = () => {
       <div className="overlay-screen victory-screen animate-fade-in">
         <div className="glass-panel text-center success-panel">
           <h1 className="victory-title animate-bounce">VICTORY!</h1>
-          <p className="victory-subtitle">60초간 완벽히 위장하여 생존했습니다!</p>
+          <p className="victory-subtitle">술래의 추적을 피해 생존해냈습니다!</p>
           <div className="stats-box">
             <p>남은 생존 시간: <strong>00:00</strong> (전체 시간 생존 완료!)</p>
           </div>
           <button className="btn btn-success" onClick={handleResetGame}>
-            다시 하기
+            메인 화면으로
           </button>
         </div>
       </div>
@@ -161,15 +173,22 @@ export const GameUI: React.FC = () => {
     <div className="game-hud-layer">
       {/* Top Left: Timer & Alert Status */}
       <div className="hud-panel top-left glass-panel">
-        <div className="timer-display">
-          <span className="label">생존 시간</span>
-          <span className="value">{formatTime(timer)}</span>
-        </div>
+        {gamePhase === 'HIDING' ? (
+          <div className="timer-display hiding-phase">
+            <span className="label text-success">은폐 가능 시간</span>
+            <span className="value text-success">{hidingTimer}초</span>
+          </div>
+        ) : (
+          <div className="timer-display seeking-phase">
+            <span className="label">남은 생존 시간</span>
+            <span className="value">{formatTime(timer)}</span>
+          </div>
+        )}
         
         <div className="detection-status-row">
           <span className="label">위장 상태</span>
-          <span className={`status-badge ${isPlayerSpotted ? 'spotted animate-pulse' : 'hidden'}`}>
-            {isPlayerSpotted ? 'SPOTTED' : 'HIDDEN'}
+          <span className={`status-badge ${gamePhase === 'HIDING' ? 'hidden' : (isPlayerSpotted ? 'spotted animate-pulse' : 'hidden')}`}>
+            {gamePhase === 'HIDING' ? '대기 중' : (isPlayerSpotted ? 'SPOTTED' : 'HIDDEN')}
           </span>
         </div>
 
@@ -177,18 +196,18 @@ export const GameUI: React.FC = () => {
         <div className="gauge-container">
           <div className="gauge-label-row">
             <span>발각 위기 수준</span>
-            <span>{Math.round(detectionGauge)}%</span>
+            <span>{gamePhase === 'HIDING' ? 0 : Math.round(detectionGauge)}%</span>
           </div>
           <div className="gauge-track">
             <div 
-              className={`gauge-fill ${alertColorClass}`} 
-              style={{ width: `${detectionGauge}%` }}
+              className={`gauge-fill ${gamePhase === 'HIDING' ? 'success' : alertColorClass}`} 
+              style={{ width: `${gamePhase === 'HIDING' ? 0 : detectionGauge}%` }}
             />
           </div>
         </div>
 
         {/* Small color difference matching metric */}
-        {isPlayerSpotted && (
+        {gamePhase === 'SEEKING' && isPlayerSpotted && (
           <div className="match-indicator">
             <span>색상 차이치:</span>
             <span style={{ color: colorDistance > 110 ? '#EF4444' : '#10B981', fontWeight: 'bold' }}>
@@ -202,7 +221,33 @@ export const GameUI: React.FC = () => {
       {/* Right side: Paint Control Panel */}
       <div className="hud-panel right-controls glass-panel">
         <h2>위장 팔레트</h2>
-        <p className="panel-desc">캐릭터 몸을 드래그해서 색상을 입히세요.</p>
+        
+        {/* Controls Mode Toggle */}
+        <div className="control-section">
+          <h3>조작 모드 선택</h3>
+          <div className="brush-size-group">
+            <button
+              className={`btn-brush-size ${uiMode === 'PAINT' ? 'active' : ''}`}
+              style={{ flex: '1.2' }}
+              onClick={() => gameStore.setState({ uiMode: 'PAINT' })}
+            >
+              🖌️ 페인팅 모드
+            </button>
+            <button
+              className={`btn-brush-size ${uiMode === 'ORBIT' ? 'active' : ''}`}
+              style={{ flex: '1.2' }}
+              onClick={() => gameStore.setState({ uiMode: 'ORBIT' })}
+            >
+              🎥 시점 회전 모드
+            </button>
+          </div>
+        </div>
+
+        <p className="panel-desc" style={{ marginTop: '-12px', fontSize: '11px', lineHeight: '1.3' }}>
+          {uiMode === 'PAINT' 
+            ? '페인팅 모드 활성화: 카메라 회전이 락인(lock)되고 캐릭터 몸(캡슐)을 직접 클릭 드래그하여 페인팅할 수 있습니다.' 
+            : '시점 회전 모드 활성화: 화면 빈 공간을 클릭 드래그하여 플레이어 주변의 카메라 시점을 회전할 수 있습니다.'}
+        </p>
         
         {/* Color Palette */}
         <div className="control-section">
@@ -263,7 +308,7 @@ export const GameUI: React.FC = () => {
         
         {/* Tips box */}
         <div className="tips-box">
-          <p>💡 <strong>Tip</strong>: 술래의 눈을 피하려면 주변 바닥이나 소파, 기둥의 색상에 맞춰 캐릭터 몸을 정확하게 칠한 다음 멈춰 서세요!</p>
+          <p>💡 <strong>Tip</strong>: 은폐 단계인 첫 30초 동안 벽이나 장애물 옆에 위치를 잡고, 바디 텍스처를 배경색과 동일하게 색칠하세요! 30초가 지나면 술래가 이동을 시작합니다.</p>
         </div>
       </div>
     </div>

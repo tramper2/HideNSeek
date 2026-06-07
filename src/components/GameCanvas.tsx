@@ -9,6 +9,7 @@ import { useGameStore } from '../hooks/useGameStore';
 
 export const GameCanvas: React.FC = () => {
   const status = useGameStore((state) => state.status);
+  const uiMode = useGameStore((state) => state.uiMode);
   const controlsRef = useRef<any>(null);
   
   // Track if player is currently drawing to disable camera orbiting
@@ -61,7 +62,7 @@ export const GameCanvas: React.FC = () => {
         {/* Camera orbital controller following the player */}
         <OrbitControls
           ref={controlsRef}
-          enabled={!isPainting && status === 'PLAYING'}
+          enabled={!isPainting && uiMode === 'ORBIT' && status === 'PLAYING'}
           enableDamping
           dampingFactor={0.08}
           minDistance={4}

@@ -28,6 +28,7 @@ export const AISeeker: React.FC = () => {
   const [currentYaw, setCurrentYaw] = useState(0);
 
   const status = useGameStore((state) => state.status);
+  const gamePhase = useGameStore((state) => state.gamePhase);
   const isPlayerMoving = useGameStore((state) => state.isPlayerMoving);
   const playerAvgColor = useGameStore((state) => state.playerAvgColor);
 
@@ -37,7 +38,18 @@ export const AISeeker: React.FC = () => {
       if (status === 'START' && seekerRef.current) {
         // Position at center
         seekerRef.current.position.set(0, 1.0, 0);
+        seekerRef.current.rotation.set(0, 0, 0);
       }
+      return;
+    }
+
+    if (gamePhase === 'HIDING') {
+      seekerRef.current.position.set(0, 1.0, 0);
+      seekerRef.current.rotation.set(0, 0, 0);
+      gameStore.setState({
+        isPlayerSpotted: false,
+        detectionGauge: 0,
+      });
       return;
     }
 
