@@ -40,7 +40,7 @@
    ```bash
    npm run dev
    ```
-   실행 후 브라우저에서 `http://localhost:5173/`으로 접속합니다.
+   실행 후 브라우저에서 (https://tramper2.github.io/HideNSeek/)`으로 접속합니다.
 
 3. **프로덕션 빌드 테스트**:
    ```bash

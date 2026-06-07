@@ -69,13 +69,27 @@ interface PlayerProps {
 export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) => {
   const playerRef = useRef<THREE.Group>(null);
   const lastUpdateRef = useRef<number>(0);
-  
+
+  // ── React 상태 구독 (렌더링 트리거 목적)
   const status = useGameStore((state) => state.status);
   const uiMode = useGameStore((state) => state.uiMode);
   const brushColor = useGameStore((state) => state.brushColor);
   const brushBrightness = useGameStore((state) => state.brushBrightness);
   const brushSize = useGameStore((state) => state.brushSize);
   const isPlayerMoving = useGameStore((state) => state.isPlayerMoving);
+
+  // ── Refs: 클로저 stale 문제 방지 — 이벤트 핸들러에서는 항상 이 ref를 참조
+  const statusRef = useRef(status);
+  const uiModeRef = useRef(uiMode);
+  const brushColorRef = useRef(brushColor);
+  const brushBrightnessRef = useRef(brushBrightness);
+  const brushSizeRef = useRef(brushSize);
+
+  useEffect(() => { statusRef.current = status; }, [status]);
+  useEffect(() => { uiModeRef.current = uiMode; }, [uiMode]);
+  useEffect(() => { brushColorRef.current = brushColor; }, [brushColor]);
+  useEffect(() => { brushBrightnessRef.current = brushBrightness; }, [brushBrightness]);
+  useEffect(() => { brushSizeRef.current = brushSize; }, [brushSize]);
 
   const { camera } = useThree();
   const isPaintingRef = useRef(false);
@@ -86,7 +100,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
   // Keyboard input setup
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (status !== 'PLAYING') return;
+      if (statusRef.current !== 'PLAYING') return;
       const key = e.key.toLowerCase();
       if (key === 'w' || e.key === 'ArrowUp') keys.current.w = true;
       if (key === 'a' || e.key === 'ArrowLeft') keys.current.a = true;
@@ -108,16 +122,16 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [status]);
+  }, []);
 
-  // Create painting canvas
+  // Create painting canvas (한 번만 생성)
   const canvas = useMemo(() => {
     const c = document.createElement('canvas');
     c.width = 512;
     c.height = 512;
     const ctx = c.getContext('2d');
     if (ctx) {
-      ctx.fillStyle = '#FFFFFF'; // Start white
+      ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, 512, 512);
     }
     return c;
@@ -136,7 +150,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
     return tex;
   }, [canvas]);
 
-  // Force texture recalculation on game reset/status change
+  // Force texture reset on game start
   useEffect(() => {
     if (status === 'PLAYING') {
       const ctx = canvas.getContext('2d');
@@ -144,15 +158,13 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, 512, 512);
       }
-      if (texture) {
-        texture.needsUpdate = true;
-      }
+      texture.needsUpdate = true;
       gameStore.setState({ playerAvgColor: { r: 255, g: 255, b: 255 } });
       if (playerRef.current) {
-        playerRef.current.position.set(0, 0.9, 4); // Reset position
+        playerRef.current.position.set(0, 0.9, 4);
       }
     }
-  }, [status, canvas]);
+  }, [status, canvas, texture]);
 
   // Calculate and update canvas average color
   const updateAverageColor = (force = false) => {
@@ -164,66 +176,43 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
     }
   };
 
-  // Paint texture on drag
-  const drawOnTexture = (e: any) => {
-    e.stopPropagation();
-    if (!isPaintingRef.current || !e.uv || uiMode !== 'PAINT') return;
-
+  // ── 실제 캔버스에 원 하나를 그리는 순수 함수
+  const paintDot = (uvX: number, uvY: number) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const u = e.uv.x;
-    const v = e.uv.y;
-    const x = u * canvas.width;
-    const y = (1 - v) * canvas.height;
+    const x = uvX * canvas.width;
+    const y = (1 - uvY) * canvas.height;
+    const radius = brushSizeRef.current * 120;
+    const hsl = hexToHsl(brushColorRef.current);
 
-    // Brush radius
-    const radius = brushSize * 120; // 0.05 -> 6px, 0.15 -> 18px, 0.3 -> 36px
-    const hsl = hexToHsl(brushColor);
-    
-    ctx.fillStyle = `hsl(${hsl.h}, ${hsl.s}%, ${brushBrightness * 100}%)`;
+    ctx.fillStyle = `hsl(${hsl.h}, ${hsl.s}%, ${brushBrightnessRef.current * 100}%)`;
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2);
     ctx.fill();
 
-    if (texture) {
-      texture.needsUpdate = true;
-    }
-
+    texture.needsUpdate = true;
     updateAverageColor();
   };
 
+  // ── R3F pointer handlers (ref를 읽으므로 stale closure 없음)
   const handlePointerDown = (e: any) => {
     e.stopPropagation();
-    if (status !== 'PLAYING' || uiMode !== 'PAINT') return;
+    if (statusRef.current !== 'PLAYING' || uiModeRef.current !== 'PAINT') return;
+
     isPaintingRef.current = true;
-    setIsPainting(true); // Disable OrbitControls
+    setIsPainting(true);
 
-    // Capture pointer so move/up events keep firing on this mesh
-    if (e.nativeEvent?.target?.setPointerCapture && e.nativeEvent?.pointerId != null) {
-      e.nativeEvent.target.setPointerCapture(e.nativeEvent.pointerId);
-    }
-
-    // Draw the first dot at the click point
+    // 클릭 지점에 첫 도트 그리기
     if (e.uv) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        const u = e.uv.x;
-        const v = e.uv.y;
-        const x = u * canvas.width;
-        const y = (1 - v) * canvas.height;
-        const radius = brushSize * 120;
-        const hsl = hexToHsl(brushColor);
-        ctx.fillStyle = `hsl(${hsl.h}, ${hsl.s}%, ${brushBrightness * 100}%)`;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fill();
-        if (texture) {
-          texture.needsUpdate = true;
-        }
-        updateAverageColor();
-      }
+      paintDot(e.uv.x, e.uv.y);
     }
+  };
+
+  const handlePointerMove = (e: any) => {
+    e.stopPropagation();
+    if (!isPaintingRef.current || !e.uv || uiModeRef.current !== 'PAINT') return;
+    paintDot(e.uv.x, e.uv.y);
   };
 
   const handlePointerUp = (e: any) => {
@@ -235,24 +224,24 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
     }
   };
 
-  // Global mouse up event listener to cancel paint drag safely
+  // Global mouseup fallback (마우스가 mesh 밖에서 떼어질 때 대비)
   useEffect(() => {
     const handleGlobalMouseUp = () => {
       if (isPaintingRef.current) {
         isPaintingRef.current = false;
-        setIsPainting(false); // Enable OrbitControls
-        updateAverageColor(true); // Final force update
+        setIsPainting(false);
+        updateAverageColor(true);
       }
     };
     window.addEventListener('mouseup', handleGlobalMouseUp);
     return () => {
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [setIsPainting, canvas]);
+  }, [setIsPainting]);
 
   // Frame tick updates: Movement and Camera Follow
   useFrame((_, delta) => {
-    if (!playerRef.current || status !== 'PLAYING') return;
+    if (!playerRef.current || statusRef.current !== 'PLAYING') return;
 
     // 1. Movement Calculations relative to Camera
     const moveX = (keys.current.d ? 1 : 0) - (keys.current.a ? 1 : 0);
@@ -264,7 +253,6 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
     }
 
     if (isMoving) {
-      // Get camera forward and right directions projected to horizontal plane
       const camForward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
       camForward.y = 0;
       camForward.normalize();
@@ -273,23 +261,21 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
       camRight.y = 0;
       camRight.normalize();
 
-      // Desired movement direction vector
       const moveDirection = new THREE.Vector3()
         .addScaledVector(camRight, moveX)
         .addScaledVector(camForward, moveZ)
         .normalize();
 
-      const speed = 4.5; // Units per second
+      const speed = 4.5;
       const step = speed * delta;
 
       const newPos = playerRef.current.position.clone();
-      
-      // Slide physics (try moving along X axis first, then Z axis)
+
       const tryX = newPos.x + moveDirection.x * step;
       if (!checkCollision(tryX, newPos.z)) {
         newPos.x = tryX;
       }
-      
+
       const tryZ = newPos.z + moveDirection.z * step;
       if (!checkCollision(newPos.x, tryZ)) {
         newPos.z = tryZ;
@@ -297,7 +283,6 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
 
       playerRef.current.position.copy(newPos);
 
-      // Rotate player to face movement direction smoothly
       const targetRotation = Math.atan2(moveDirection.x, moveDirection.z);
       playerRef.current.rotation.y = THREE.MathUtils.lerp(
         playerRef.current.rotation.y,
@@ -308,7 +293,6 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
 
     // 2. Camera Tracking lock
     if (controlsRef.current) {
-      // OrbitControls target matches player pos
       controlsRef.current.target.copy(playerRef.current.position);
       controlsRef.current.update();
     }
@@ -321,7 +305,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
         castShadow
         receiveShadow
         onPointerDown={handlePointerDown}
-        onPointerMove={drawOnTexture}
+        onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         userData={{ isPlayer: true }}
       >
