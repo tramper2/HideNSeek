@@ -39,17 +39,11 @@ To resolve the input conflict between camera rotation and body painting, we intr
 - Clicking "메인 화면으로" (Game Over/Victory screens) resets the game state back to `'START'`.
   - The user is returned to the main start menu rather than launching immediately into gameplay, allowing them to adjust brush and phase duration preferences before starting again.
 
-### 4. Player Mesh Painting Bug Fix (플레이어 바디 페인팅 버그 해결)
-- **원인**: React Three Fiber (R3F)가 컴포넌트 렌더링 시마다 `<canvasTexture args={[canvas]} />`의 인스턴스를 소멸시키고 다시 생성하여, 사용자가 색칠한 드로잉 텍스처 내용이 상태 변경(움직임 감지, 브러시 변경 등)과 동시에 초기화되어 사라지거나 렌더링에 반영되지 않는 문제가 발생했습니다.
-- **해결**: CanvasTexture를 렌더러 선언식(`<canvasTexture>`) 대신 React 훅(`useMemo`)을 통해 단 한 번만 생성 및 유지되도록 명령형 방식으로 변경하고, 이를 메쉬 재질의 `map` 속성에 직접 대입하였습니다.
-  ```tsx
-  const texture = useMemo(() => {
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
-  }, [canvas]);
-  ```
-  색칠할 때 `texture.needsUpdate = true`를 선언적으로 실행하여 컴포넌트 업데이트 시에도 유실 없이 브러시 흔적이 실시간으로 반영되도록 개선했습니다.
+### 4. Player Mesh Painting Bug Fix & Interaction Fixes (플레이어 바디 페인팅 버그 및 조작성 해결)
+- **R3F CanvasTexture 초기화 방지**: React Three Fiber (R3F)가 컴포넌트 렌더링 시마다 `<canvasTexture args={[canvas]} />`의 인스턴스를 소멸시키고 다시 생성하여, 사용자가 색칠한 드로잉 텍스처 내용이 상태 변경(움직임 감지, 브러시 변경 등)과 동시에 초기화되어 사라지거나 렌더링에 반영되지 않는 문제를 `useMemo` 캐싱 및 `texture.needsUpdate = true` 강제 플래그 지정으로 해결했습니다.
+- **클릭 즉시 채색 (PointerDown 드로잉)**: 기존에 드래그(`pointermove`) 시에만 페인팅이 작동하여 클릭만 했을 때 채색이 되지 않던 현상을 해결하기 위해 `onPointerDown` 이벤트 시점에도 현재 UV 좌표를 기준으로 첫 획을 그리도록 변경했습니다.
+- **포인터 캡처 API 적용**: 드래그하는 도중 마우스 포인터가 플레이어의 캡슐 모델링 영역을 잠시 벗어나더라도 페인팅이 유지되도록 브라우저의 `setPointerCapture` API를 사용해 포인터 이벤트를 메시에 귀속시켰습니다.
+- **OrbitControls 간섭 추가 차단**: 페인팅 모드(`uiMode === 'PAINT'`)일 때 카메라가 드래그를 가로채지 않도록 `OrbitControls` 컴포넌트의 `enableRotate` 및 `enableZoom` 옵션을 완전히 꺼서 이벤트를 완전 차단하였습니다.
 
 ---
 
