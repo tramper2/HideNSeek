@@ -28,14 +28,16 @@ We created and refined a fully playable, web-based 3D hide-and-seek game utilizi
 - During this phase, the AI Seeker remains stationary at the center `[0, 1.0, 0]` and its detection algorithm is disabled (alert gauge remains locked at 0%).
 - After the hiding time runs out, the game transitions to the **Seeking Phase** (생존 시간), where the AI Seeker starts patrolling and the 60-second countdown begins.
 
-### 2. Gesture Mode Toggle (조작 모드 분리)
-To resolve the input conflict between camera rotation and body painting, we introduced a **UIMode Toggle** in the HUD panel:
-- **페인팅 모드 (Paint Mode - Default)**: OrbitControls are completely disabled. Clicking and dragging on the player character draws color smoothly onto the body texture without any camera movement.
+### 2. Gesture Mode Toggle & Raycast Bypass (조작 모드 분리 및 레이캐스트 우회)
+To resolve the input conflict between camera rotation and body painting, we introduced a **UIMode Toggle** in the HUD panel and optimized raycasting:
+- **페인팅 모드 (Paint Mode - Default)**: OrbitControls are completely disabled. Clicking and dragging on the player character draws color smoothly onto the body texture without any camera movement. We implemented `isPaintingRef` (React Ref) to capture mouse events synchronously, preventing draw lag from React's asynchronous rendering cycles.
 - **시점 회전 모드 (Orbit Mode)**: OrbitControls are enabled. Clicking and dragging on the background allows the player to orbit and adjust the camera angle freely.
+- **Raycast Bypass**: The AI Seeker's transparent vision cone and physical meshes were intercepting user clicks. We added `raycast={() => null}` to all AI Seeker meshes so clicks penetrate through the Seeker and reach the Player mesh directly.
+- **Separated Positions**: The Seeker now starts in the north `[0, 1.0, -4]` and the player starts in the south `[0, 0.9, 4]` to prevent overlaps.
 
 ### 3. Start Screen Redirection
-- Clicking "다시 도전" (Game Over screen) or "메인 화면으로" (Victory screen) resets the game state back to `'START'`.
-- The user is returned to the main start menu rather than launching immediately into gameplay, allowing them to adjust brush preferences before starting again.
+- Clicking "메인 화면으로" (Game Over/Victory screens) resets the game state back to `'START'`.
+- The user is returned to the main start menu rather than launching immediately into gameplay, allowing them to adjust brush and phase duration preferences before starting again.
 
 ---
 

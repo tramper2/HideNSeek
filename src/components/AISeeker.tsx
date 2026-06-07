@@ -36,15 +36,15 @@ export const AISeeker: React.FC = () => {
   useFrame((state, delta) => {
     if (status !== 'PLAYING' || !seekerRef.current) {
       if (status === 'START' && seekerRef.current) {
-        // Position at center
-        seekerRef.current.position.set(0, 1.0, 0);
+        // Position at north wait point
+        seekerRef.current.position.set(0, 1.0, -4);
         seekerRef.current.rotation.set(0, 0, 0);
       }
       return;
     }
 
     if (gamePhase === 'HIDING') {
-      seekerRef.current.position.set(0, 1.0, 0);
+      seekerRef.current.position.set(0, 1.0, -4);
       seekerRef.current.rotation.set(0, 0, 0);
       gameStore.setState({
         isPlayerSpotted: false,
@@ -224,15 +224,15 @@ export const AISeeker: React.FC = () => {
     : '#10B981'; // Green when calm / no player in sight
 
   return (
-    <group ref={seekerRef} position={[0, 1.0, 0]} name="AISeeker" userData={{ isAI: true }}>
+    <group ref={seekerRef} position={[0, 1.0, -4]} name="AISeeker" userData={{ isAI: true }}>
       {/* AI Body: Crimson cone/pyramid */}
-      <mesh castShadow receiveShadow>
+      <mesh castShadow receiveShadow raycast={() => null}>
         <coneGeometry args={[0.55, 1.8, 4]} />
         <meshStandardMaterial color="#1E1B4B" roughness={0.3} metalness={0.7} />
       </mesh>
 
       {/* AI Eye / Scanning visor (Glowing Crimson) */}
-      <mesh position={[0, 0.4, 0.45]}>
+      <mesh position={[0, 0.4, 0.45]} raycast={() => null}>
         <boxGeometry args={[0.45, 0.12, 0.1]} />
         <meshStandardMaterial 
           color={isPlayerSpotted ? '#FF0000' : '#00FF88'} 
@@ -243,7 +243,7 @@ export const AISeeker: React.FC = () => {
       </mesh>
 
       {/* Visual field of view: transparent spotlight cone projection */}
-      <mesh position={[0, -0.6, 2.8]} rotation={[Math.PI / 3.8, 0, 0]}>
+      <mesh position={[0, -0.6, 2.8]} rotation={[Math.PI / 3.8, 0, 0]} raycast={() => null}>
         <coneGeometry args={[3.2, 7.5, 16, 1, true]} />
         <meshBasicMaterial 
           color={coneColor} 

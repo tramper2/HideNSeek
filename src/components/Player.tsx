@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { gameStore, useGameStore } from '../hooks/useGameStore';
@@ -79,7 +79,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
   const isPlayerMoving = useGameStore((state) => state.isPlayerMoving);
 
   const { camera } = useThree();
-  const [paintingInProgress, setPaintingInProgress] = useState(false);
+  const isPaintingRef = useRef(false);
 
   // Key state listener
   const keys = useRef({ w: false, a: false, s: false, d: false });
@@ -143,7 +143,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
       }
       gameStore.setState({ playerAvgColor: { r: 255, g: 255, b: 255 } });
       if (playerRef.current) {
-        playerRef.current.position.set(0, 0.9, 0); // Reset position
+        playerRef.current.position.set(0, 0.9, 4); // Reset position
       }
     }
   }, [status, canvas]);
@@ -161,7 +161,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
   // Paint texture on drag
   const drawOnTexture = (e: any) => {
     e.stopPropagation();
-    if (!paintingInProgress || !e.uv || uiMode !== 'PAINT') return;
+    if (!isPaintingRef.current || !e.uv || uiMode !== 'PAINT') return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -190,15 +190,15 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
   const handlePointerDown = (e: any) => {
     e.stopPropagation();
     if (status !== 'PLAYING' || uiMode !== 'PAINT') return;
-    setPaintingInProgress(true);
+    isPaintingRef.current = true;
     setIsPainting(true); // Disable OrbitControls
   };
 
   // Global mouse up event listener to cancel paint drag safely
   useEffect(() => {
     const handleGlobalMouseUp = () => {
-      if (paintingInProgress) {
-        setPaintingInProgress(false);
+      if (isPaintingRef.current) {
+        isPaintingRef.current = false;
         setIsPainting(false); // Enable OrbitControls
         updateAverageColor(true); // Final force update
       }
@@ -207,7 +207,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
     return () => {
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [paintingInProgress, setIsPainting, canvas]);
+  }, [setIsPainting, canvas]);
 
   // Frame tick updates: Movement and Camera Follow
   useFrame((_, delta) => {
@@ -274,7 +274,7 @@ export const Player: React.FC<PlayerProps> = ({ controlsRef, setIsPainting }) =>
   });
 
   return (
-    <group ref={playerRef} position={[0, 0.9, 0]} name="Player">
+    <group ref={playerRef} position={[0, 0.9, 4]} name="Player">
       {/* Player character visual geometry: Capsule mesh */}
       <mesh
         castShadow
