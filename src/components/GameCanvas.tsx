@@ -6,7 +6,7 @@ import { Environment } from './Environment';
 import { Player } from './Player';
 import { AISeeker } from './AISeeker';
 import { Coins } from './Coins';
-import { SeekerMinimap } from './SeekerMinimap';
+import { MinimapTracker } from './SeekerMinimap';
 import { useGameStore } from '../hooks/useGameStore';
 
 export const GameCanvas: React.FC = () => {
@@ -85,7 +85,7 @@ export const GameCanvas: React.FC = () => {
         />
 
         {/* 술래 시야 미니맵 (SEEKING 페이즈에만 표시) */}
-        <SeekerMinimap />
+        <MinimapTracker />
       </Canvas>
     </div>
   );
