@@ -26,7 +26,6 @@ const PATROL_OFFSETS: number[] = [0, 2, 4]; // Starting node index offset
 const SEEKER_SPEED = 2.8;
 const VISION_RANGE = 9.5;
 const FOV_ANGLE = Math.PI / 3; // 60 degrees total FOV
-const COLOR_THRESHOLD = 110;
 
 // ── Audio: spotted alert sound using Web Audio API
 let audioCtx: AudioContext | null = null;
@@ -206,15 +205,16 @@ export const AISeeker: React.FC<AISeekerProps> = ({ index }) => {
     let gauge = storeState.detectionGauge;
 
     if (spotted) {
+      // 발견 시 무조건 게이지 상승 — 위장은 속도를 늦출 뿐 역전시키지 않음
       if (isPlayerMoving) {
-        gauge += delta * 85;
-      } else if (currentDist > COLOR_THRESHOLD) {
-        const scale = (currentDist - COLOR_THRESHOLD) / (441 - COLOR_THRESHOLD);
-        gauge += delta * (15 + scale * 35);
+        gauge += delta * 85; // 이동 중 발견: 급격한 상승
       } else {
-        gauge -= delta * 15;
+        // 정지 상태: 색상 차이에 비례해서 상승 (최소 0.3 배율 보장)
+        const colorFactor = Math.max(0.3, currentDist / 441);
+        gauge += delta * (10 + colorFactor * 40);
       }
-    } else {
+    } else if (index === 0) {
+      // 쿨다운은 첫 번째 술래만 담당 — 미발견 시에만 감소
       gauge -= delta * 20;
     }
 
